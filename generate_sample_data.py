@@ -14,8 +14,8 @@ Usage:
     python main.py --baseline baseline.txt --candidate candidate.txt --top 10 --json --md
 """
 
-import random
 import ipaddress
+import random
 
 random.seed(42)
 

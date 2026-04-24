@@ -8,8 +8,9 @@ and WHAT the numbers mean, not just the raw values.
 """
 
 import logging
-from utils   import DiffResult
-from config  import HISTORICAL_RUNS, SEVERITY_WEIGHTS, SEVERITY_CAPS
+
+from config import HISTORICAL_RUNS, SEVERITY_CAPS, SEVERITY_WEIGHTS
+from utils import DiffResult
 
 log = logging.getLogger(__name__)
 

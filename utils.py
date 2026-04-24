@@ -17,11 +17,11 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 from config import (
-    TOTAL_IPV4_ADDRESSES,
-    TOTAL_IPV6_ADDRESSES,
-    SEVERITY_WEIGHTS,
     SEVERITY_CAPS,
     SEVERITY_THRESHOLDS,
+    SEVERITY_WEIGHTS,
+    TOTAL_IPV4_ADDRESSES,
+    TOTAL_IPV6_ADDRESSES,
 )
 
 log = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ def load_asmap(file_path: str) -> dict[str, str]:
     mapping: dict[str, str] = {}
     skipped = 0
 
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
             line = line.strip()
             if not line or line.startswith("#"):

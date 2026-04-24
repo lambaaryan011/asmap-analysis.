@@ -15,11 +15,11 @@ Usage:
 """
 
 import argparse
-import json
 import csv
-import sys
-import os
+import json
 import logging
+import os
+import sys
 from datetime import datetime, timezone
 
 try:
@@ -28,12 +28,18 @@ try:
 except ImportError:
     HAS_TABULATE = False
 
-from config        import (DEFAULT_TOP_ASNS, DEFAULT_JSON_PATH, DEFAULT_CSV_PATH,
-                           DEFAULT_MD_PATH, SAMPLE_CHANGE_LIMIT, LOG_FORMAT, LOG_DATE)
-from utils         import load_asmap, compare_maps, DiffResult
 from asmap_decoder import decode_asmap_file
-from insight       import generate_insight, historical_context, severity_explanation
-
+from config import (
+    DEFAULT_CSV_PATH,
+    DEFAULT_JSON_PATH,
+    DEFAULT_MD_PATH,
+    DEFAULT_TOP_ASNS,
+    LOG_DATE,
+    LOG_FORMAT,
+    SAMPLE_CHANGE_LIMIT,
+)
+from insight import generate_insight, historical_context, severity_explanation
+from utils import DiffResult, compare_maps, load_asmap
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
 
@@ -79,11 +85,16 @@ def smart_load(label: str, path: str) -> dict[str, str]:
 
 def fmt_ips(n: int) -> str:
     """Format a large IP count into a compact human-readable string."""
-    if n >= 10 ** 18: return f"{n / 10 ** 18:.1f}E"
-    if n >= 10 ** 12: return f"{n / 10 ** 12:.1f}T"
-    if n >= 1_000_000_000: return f"{n / 1_000_000_000:.2f}B"
-    if n >= 1_000_000: return f"{n / 1_000_000:.2f}M"
-    if n >= 1_000: return f"{n / 1_000:.1f}K"
+    if n >= 10 ** 18:
+        return f"{n / 10 ** 18:.1f}E"
+    if n >= 10 ** 12:
+        return f"{n / 10 ** 12:.1f}T"
+    if n >= 1_000_000_000:
+        return f"{n / 1_000_000_000:.2f}B"
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.2f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}K"
     return str(n)
 
 

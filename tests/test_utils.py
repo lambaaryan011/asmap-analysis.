@@ -10,13 +10,13 @@ Run:
 
 import os
 import sys
+
 import pytest
 
 # Allow imports from the project root (where utils.py lives)
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils import load_asmap, compare_maps, prefix_size, DiffResult
-
+from utils import DiffResult, compare_maps, load_asmap, prefix_size
 
 # ══════════════════════════════════════════════════════════════════════════════
 # load_asmap()

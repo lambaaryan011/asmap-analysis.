@@ -10,21 +10,19 @@ Run:
 
 import os
 import sys
-import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils   import compare_maps, DiffResult
+from config import HISTORICAL_RUNS
 from insight import (
+    _AVG_COVERAGE_V4,
+    _AVG_DIFF_PCT,
+    _PAST_RUNS,
     generate_insight,
     historical_context,
     severity_explanation,
-    _AVG_DIFF_PCT,
-    _AVG_COVERAGE_V4,
-    _PAST_RUNS,
 )
-from config import HISTORICAL_RUNS
-
+from utils import DiffResult, compare_maps
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

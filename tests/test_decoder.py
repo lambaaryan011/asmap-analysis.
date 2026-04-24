@@ -10,17 +10,17 @@ Run:
 
 import os
 import sys
+
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from asmap_decoder import (
-    BitReader,
-    decode_asmap_file,
-    asmap_info,
     MIN_ENTRIES,
+    BitReader,
+    asmap_info,
+    decode_asmap_file,
 )
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # BitReader

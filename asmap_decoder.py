@@ -179,7 +179,7 @@ def decode_asmap_file(filepath: str) -> dict[str, str]:
 
     if len(results) >= MIN_ENTRIES:
         log.info("binary decode succeeded: %d prefixes", len(results))
-        return {pfx: asn for pfx, asn in results}
+        return dict(results)
 
     # ── Attempt 2: text format fallback ──────────────────────────────────────
     log.info("binary decode yielded %d entries — trying text format", len(results))
