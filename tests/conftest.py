@@ -31,7 +31,9 @@ def single_prefix(tmp_path):
 @pytest.fixture
 def two_prefixes(tmp_path):
     """Two distinct prefixes, two distinct ASNs."""
-    return _write_asmap(tmp_path / "base", [
+    subdir = tmp_path / "base"
+    subdir.mkdir(parents=True, exist_ok=True)
+    return _write_asmap(subdir, [
         "1.0.0.0/24 AS13335",
         "2.0.0.0/24 AS15169",
     ])
@@ -99,15 +101,40 @@ def hundred_prefix_baseline(tmp_path):
 def hundred_prefix_candidate(tmp_path):
     """
     Candidate derived from the 100-prefix baseline:
+      - keeps prefixes 1-90 (90 unchanged)
       - removes prefixes 91-100 (10 removed)
-      - adds  200.0-9.0.0/24 (10 added)
+      - adds  200.0-9.0.0/24   (10 added)
     Net: 20 changes out of 100 baseline → diff_percentage == 20.0
+    NOTE: tmp_path here is a different directory from hundred_prefix_baseline.
+    Use the hundred_prefix_pair fixture when you need both files for compare_maps.
     """
     lines = (
         [f"{i}.0.0.0/24 AS13335" for i in range(1, 91)]
         + [f"200.{i}.0.0/24 AS15169" for i in range(10)]
     )
     return _write_asmap(tmp_path, lines)
+
+
+@pytest.fixture
+def hundred_prefix_pair(tmp_path):
+    """
+    Both baseline and candidate written to the SAME tmp_path so that
+    compare_maps() sees real diffs.
+
+    baseline: 100 prefixes (1.x–100.x), all AS13335
+    candidate: keeps 1.x–90.x, drops 91.x–100.x, adds 200.0–9.x
+    → 10 removed + 10 added = 20 total changes out of 100 → diff_percentage == 20.0
+    """
+    base_lines = [f"{i}.0.0.0/24 AS13335" for i in range(1, 101)]
+    cand_lines = (
+        [f"{i}.0.0.0/24 AS13335" for i in range(1, 91)]
+        + [f"200.{i}.0.0/24 AS15169" for i in range(10)]
+    )
+    base_path = tmp_path / "baseline.txt"
+    cand_path = tmp_path / "candidate.txt"
+    base_path.write_text("\n".join(base_lines), encoding="utf-8")
+    cand_path.write_text("\n".join(cand_lines), encoding="utf-8")
+    return str(base_path), str(cand_path)
 
 
 # ── High-churn map (severity: Critical threshold) ────────────────────────────
