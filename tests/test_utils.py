@@ -204,10 +204,10 @@ class TestCompareMapsBasic:
 
 class TestDiffPercentage:
 
-    def test_twenty_percent_churn(self, hundred_prefix_baseline,
-                                  hundred_prefix_candidate):
-        base = load_asmap(hundred_prefix_baseline)
-        cand = load_asmap(hundred_prefix_candidate)
+    def test_twenty_percent_churn(self, hundred_prefix_pair):
+        base_path, cand_path = hundred_prefix_pair
+        base = load_asmap(base_path)
+        cand = load_asmap(cand_path)
         r = compare_maps(base, cand)
         assert r.diff_percentage == 20.0
 
@@ -266,7 +266,9 @@ class TestCoverageMetrics:
         assert 0.0 < r.coverage_change_pct_v4 < 1.0
 
     def test_ipv6_coverage_separate_from_v4(self):
-        base = {"2606:4700::/32": "AS13335"}
+        # Use a /1 so the percentage survives rounding to 6 decimal places.
+        # A /32 only covers 2^-32 of the IPv6 space (~2.3e-10%) which rounds to 0.0.
+        base = {"2000::/1": "AS13335"}
         cand = {}
         r = compare_maps(base, cand)
         assert r.coverage_removed_v6  > 0
