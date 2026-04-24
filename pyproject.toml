@@ -17,8 +17,8 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/YOUR_USERNAME/asmap-dashboard"
-"Bug Tracker" = "https://github.com/YOUR_USERNAME/asmap-dashboard/issues"
+Repository = "https://github.com/lambaaryan011/asmap-analysis"
+"Bug Tracker" = "https://github.com/lambaaryan011/asmap-analysis/issues"
 "Bitcoin Core asmap-data" = "https://github.com/bitcoin-core/asmap-data"
 
 [project.scripts]
@@ -59,8 +59,11 @@ omit   = [
     "tests/*",
     "generate_sample_data.py",
     "data/*",
+    "main.py",            # Exclude CLI entry point from coverage
+    "fetch_history.py",   # Exclude network/download logic from coverage
 ]
 
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
+fail_under = 80           # High standard maintained for core logic files
