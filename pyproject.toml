@@ -1,0 +1,66 @@
+[project]
+name = "asmap-dashboard"
+version = "0.1.0"
+description = "ASmap Data Analysis Dashboard — diff, score, and visualise Bitcoin Core ASmap files"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "tabulate>=0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+]
+
+[project.urls]
+Repository = "https://github.com/YOUR_USERNAME/asmap-dashboard"
+"Bug Tracker" = "https://github.com/YOUR_USERNAME/asmap-dashboard/issues"
+"Bitcoin Core asmap-data" = "https://github.com/bitcoin-core/asmap-data"
+
+[project.scripts]
+asmap-diff = "main:main"
+
+# ── Ruff (linter) ──────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["."]
+exclude = ["data/"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",  # line length — ruff format handles this
+    "B007",  # loop variable not used in loop body (common in range loops)
+]
+
+# ── Pytest ─────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short"
+
+# ── Coverage ───────────────────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["."]
+omit   = [
+    "tests/*",
+    "generate_sample_data.py",
+    "data/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

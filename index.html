@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ASmap Analysis Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ── Reset & tokens ───────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #0d1117;
+    --surface:     #161b22;
+    --surface-2:   #1c2128;
+    --border:      #30363d;
+    --border-muted:#21262d;
+    --text:        #e6edf3;
+    --text-muted:  #7d8590;
+    --text-dim:    #484f58;
+
+    --green:       #3fb950;
+    --green-dim:   #1a4a25;
+    --yellow:      #d29922;
+    --yellow-dim:  #4a3800;
+    --orange:      #db6d28;
+    --orange-dim:  #4d2000;
+    --red:         #f85149;
+    --red-dim:     #4a1010;
+    --blue:        #58a6ff;
+    --blue-dim:    #0d2340;
+    --purple:      #bc8cff;
+
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-ui:   'Syne', system-ui, sans-serif;
+
+    --radius:    6px;
+    --radius-lg: 10px;
+    --shadow:    0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  .page-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px 64px;
+  }
+
+  /* ── Header ───────────────────────────────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .header-left { flex: 1; min-width: 280px; }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px rgba(88,166,255,.25);
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+
+  .subtitle {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .header-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .generated-at {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── Severity Badge ───────────────────────────────────────────────────── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px 5px 10px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .badge-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .badge-low      { color: var(--green);  background: var(--green-dim);  border-color: var(--green);  }
+  .badge-low .badge-dot      { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+  .badge-moderate { color: var(--yellow); background: var(--yellow-dim); border-color: var(--yellow); }
+  .badge-moderate .badge-dot { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .badge-high     { color: var(--orange); background: var(--orange-dim); border-color: var(--orange); }
+  .badge-high .badge-dot     { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+  .badge-critical { color: var(--red);    background: var(--red-dim);    border-color: var(--red); }
+  .badge-critical .badge-dot { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+
+  /* ── Stat grid ────────────────────────────────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: border-color .15s, transform .15s;
+    box-shadow: var(--shadow);
+  }
+  .stat-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-1px);
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+
+  .stat-value.positive { color: var(--green); }
+  .stat-value.negative { color: var(--red);   }
+  .stat-value.warn     { color: var(--yellow); }
+
+  .stat-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* ── Section header ───────────────────────────────────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .section-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--border-muted);
+  }
+
+  /* ── Chart cards ──────────────────────────────────────────────────────── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 820px) {
+    .chart-grid { grid-template-columns: 1fr; }
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .chart-card-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    min-height: 200px;
+  }
+
+  /* ── Insight card ─────────────────────────────────────────────────────── */
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+  }
+
+  .insight-text {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.75;
+  }
+
+  /* ── ASN Table ────────────────────────────────────────────────────────── */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 10px 16px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  th:first-child { text-align: left; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border-muted);
+    transition: background .1s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-2); }
+
+  td {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 10px 16px;
+    text-align: right;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  td:first-child {
+    text-align: left;
+    color: var(--blue);
+    font-weight: 600;
+  }
+  td.pos { color: var(--green); }
+  td.neg { color: var(--red);   }
+
+  /* ── Error state ──────────────────────────────────────────────────────── */
+  .error-banner {
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .error-banner.visible { display: flex; }
+
+  .error-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--red);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .error-body {
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.7;
+  }
+
+  .error-code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(0,0,0,.4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    color: var(--green);
+    display: inline-block;
+  }
+
+  /* ── Loading shimmer ──────────────────────────────────────────────────── */
+  .shimmer {
+    background: linear-gradient(90deg,
+      var(--surface) 0%,
+      var(--surface-2) 50%,
+      var(--surface) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: var(--radius);
+    height: 20px;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+
+  /* ── Score bar ────────────────────────────────────────────────────────── */
+  .score-bar-track {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s cubic-bezier(.22,1,.36,1);
+  }
+
+  /* ── Footer ───────────────────────────────────────────────────────────── */
+  .footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer-text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .footer-link {
+    color: var(--blue);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .footer-link:hover { text-decoration: underline; }
+
+  /* ── Animate in ───────────────────────────────────────────────────────── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: fadeIn .4s forwards;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in:nth-child(1) { animation-delay: .05s; }
+  .fade-in:nth-child(2) { animation-delay: .10s; }
+  .fade-in:nth-child(3) { animation-delay: .15s; }
+  .fade-in:nth-child(4) { animation-delay: .20s; }
+  .fade-in:nth-child(5) { animation-delay: .25s; }
+  .fade-in:nth-child(6) { animation-delay: .30s; }
+</style>
+</head>
+<body>
+<div class="page-wrap" id="app">
+
+  <!-- Error banner (shown if output.json can't be fetched) -->
+  <div class="error-banner" id="errorBanner">
+    <div class="error-title">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--red)">
+        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 11.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm.75-4.75a.75.75 0 0 1-1.5 0v-3a.75.75 0 0 1 1.5 0v3z"/>
+      </svg>
+      Could not load output.json
+    </div>
+    <div class="error-body" id="errorBody"></div>
+    <div>
+      <div class="error-code">python -m http.server 8000</div>
+    </div>
+    <div class="error-body" style="font-size:12px; color: var(--text-dim);">
+      Then open <strong style="color:var(--blue)">http://localhost:8000</strong> in your browser.
+    </div>
+  </div>
+
+  <!-- Main dashboard (hidden until data loads) -->
+  <div id="dashboard" style="display:none">
+
+    <!-- Header -->
+    <div class="header fade-in">
+      <div class="header-left">
+        <div class="logo-row">
+          <div class="logo-icon">⛓</div>
+          <h1>ASmap Analysis Dashboard</h1>
+        </div>
+        <div class="subtitle">bitcoin-core/asmap-data · diff analyzer · Summer of Bitcoin 2026</div>
+      </div>
+      <div class="header-meta">
+        <div class="badge" id="severityBadge">
+          <span class="badge-dot"></span>
+          <span id="severityLabel">—</span>
+        </div>
+        <div class="generated-at" id="generatedAt"></div>
+      </div>
+    </div>
+
+    <!-- Stat grid -->
+    <div class="stat-grid" id="statGrid"></div>
+
+    <!-- Insight -->
+    <div class="section-header fade-in">
+      <span class="section-title">Insight</span>
+      <div class="section-rule"></div>
+    </div>
+    <div class="insight-card fade-in">
+      <div class="insight-text" id="insightText"></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="section-header fade-in">
+      <span class="section-title">Visualizations</span>
+      <div class="section-rule"></div>
+    </div>
+    <div class="chart-grid fade-in">
+      <div class="chart-card">
+        <div class="chart-card-title">Top ASNs by IP space moved</div>
+        <div class="chart-wrap"><canvas id="asnChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Historical deviation (%)</div>
+        <div class="chart-wrap"><canvas id="histChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ASN table -->
+    <div class="section-header fade-in">
+      <span class="section-title">Top Changed ASNs</span>
+      <div class="section-rule"></div>
+    </div>
+    <div class="table-card fade-in">
+      <table>
+        <thead>
+          <tr>
+            <th>ASN</th>
+            <th>Gained pfx</th>
+            <th>Lost pfx</th>
+            <th>Net pfx</th>
+            <th>Gained IPs</th>
+            <th>Lost IPs</th>
+            <th>Net IPs</th>
+          </tr>
+        </thead>
+        <tbody id="asnTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer fade-in">
+      <div class="footer-text">ASmap Diff Analyzer · Summer of Bitcoin 2026</div>
+      <a class="footer-link"
+         href="https://github.com/bitcoin-core/asmap-data"
+         target="_blank" rel="noopener">
+        bitcoin-core/asmap-data ↗
+      </a>
+    </div>
+
+  </div><!-- /dashboard -->
+</div><!-- /page-wrap -->
+
+<script>
+"use strict";
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+
+/** Format large integers (IPs) into a compact string. */
+function fmtIPs(n) {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "−" : n > 0 ? "+" : "";
+  if (abs >= 1e9)  return sign + (abs / 1e9).toFixed(2)  + "B";
+  if (abs >= 1e6)  return sign + (abs / 1e6).toFixed(2)  + "M";
+  if (abs >= 1e3)  return sign + (abs / 1e3).toFixed(1)  + "K";
+  return sign + abs.toLocaleString();
+}
+
+/** Format a plain number with thousands separator. */
+function fmtNum(n) {
+  return Number(n).toLocaleString("en-US");
+}
+
+/** Format a UTC ISO string to "YYYY-MM-DD HH:MM UTC". */
+function fmtDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toISOString().replace("T", " ").slice(0, 16) + " UTC";
+  } catch {
+    return iso;
+  }
+}
+
+/** Return severity CSS class suffix (lowercase). */
+function severityClass(label) {
+  return (label || "").toLowerCase();
+}
+
+// ── Chart defaults ───────────────────────────────────────────────────────────
+
+Chart.defaults.color      = "#7d8590";
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size   = 11;
+
+const GRID_COLOR    = "#21262d";
+const BORDER_COLOR  = "#30363d";
+const TOOLTIP_BG    = "#1c2128";
+
+const sharedScales = {
+  x: {
+    grid:  { color: GRID_COLOR, drawBorder: false },
+    ticks: { color: "#7d8590" },
+    border:{ color: BORDER_COLOR },
+  },
+  y: {
+    grid:  { color: GRID_COLOR, drawBorder: false },
+    ticks: { color: "#7d8590" },
+    border:{ color: BORDER_COLOR },
+  },
+};
+
+const tooltipDefaults = {
+  backgroundColor: TOOLTIP_BG,
+  borderColor:     BORDER_COLOR,
+  borderWidth:     1,
+  titleColor:      "#e6edf3",
+  bodyColor:       "#7d8590",
+  padding:         10,
+  cornerRadius:    6,
+};
+
+// ── Render functions ─────────────────────────────────────────────────────────
+
+function renderBadge(label) {
+  const badge = document.getElementById("severityBadge");
+  const text  = document.getElementById("severityLabel");
+  badge.className = `badge badge-${severityClass(label)}`;
+  text.textContent = label;
+}
+
+function renderStatGrid(summary) {
+  const stats = [
+    {
+      label: "Baseline prefixes",
+      value: fmtNum(summary.baseline_total),
+      sub:   "total prefixes",
+    },
+    {
+      label: "Candidate prefixes",
+      value: fmtNum(summary.candidate_total),
+      sub:   "total prefixes",
+      cls:   summary.candidate_total > summary.baseline_total ? "positive" : "",
+    },
+    {
+      label: "Added",
+      value: "+" + fmtNum(summary.added),
+      cls:   "positive",
+      sub:   "new prefixes",
+    },
+    {
+      label: "Removed",
+      value: "−" + fmtNum(summary.removed),
+      cls:   "negative",
+      sub:   "removed prefixes",
+    },
+    {
+      label: "Changed ASN",
+      value: "~" + fmtNum(summary.changed),
+      cls:   "warn",
+      sub:   "reassigned prefixes",
+    },
+    {
+      label: "Diff percentage",
+      value: summary.diff_percentage.toFixed(2) + "%",
+      cls:   summary.diff_percentage > 5 ? "negative"
+           : summary.diff_percentage > 2 ? "warn" : "positive",
+      sub:   "of prefixes changed",
+    },
+    {
+      label: "IPv4 coverage Δ",
+      value: (summary.coverage_change_pct_v4 * 100).toFixed(4) + "%",
+      sub:   "address space shifted",
+    },
+    {
+      label: "Severity score",
+      value: summary.severity_score.toFixed(4),
+      sub:   "composite (0–1)",
+      bar:   summary.severity_score,
+      barColor:
+        summary.severity_label === "Critical" ? "var(--red)"
+      : summary.severity_label === "High"     ? "var(--orange)"
+      : summary.severity_label === "Moderate" ? "var(--yellow)"
+      : "var(--green)",
+    },
+  ];
+
+  const grid = document.getElementById("statGrid");
+  grid.innerHTML = "";
+  stats.forEach((s, i) => {
+    const card = document.createElement("div");
+    card.className = "stat-card fade-in";
+    card.style.animationDelay = (i * 0.04) + "s";
+
+    card.innerHTML = `
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-value ${s.cls || ""}">${s.value}</div>
+      ${s.sub  ? `<div class="stat-sub">${s.sub}</div>` : ""}
+      ${s.bar !== undefined ? `
+        <div class="score-bar-track">
+          <div class="score-bar-fill"
+               style="width:0%;background:${s.barColor}"
+               data-target="${Math.min(s.bar * 100, 100).toFixed(1)}"></div>
+        </div>` : ""}
+    `;
+    grid.appendChild(card);
+  });
+
+  // Animate score bars after render
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".score-bar-fill").forEach(el => {
+      el.style.width = el.dataset.target + "%";
+    });
+  });
+}
+
+function renderInsight(insights) {
+  document.getElementById("insightText").textContent = insights.summary || "—";
+}
+
+function renderAsnChart(topChangedAsns) {
+  const labels  = topChangedAsns.map(a => a.asn);
+  const values  = topChangedAsns.map(a => a.net_ips);
+  const colors  = values.map(v =>
+    v >= 0 ? "rgba(63,185,80,.8)" : "rgba(248,81,73,.8)"
+  );
+  const borders = values.map(v =>
+    v >= 0 ? "rgba(63,185,80,1)" : "rgba(248,81,73,1)"
+  );
+
+  new Chart(document.getElementById("asnChart"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label:           "Net IPs",
+        data:            values,
+        backgroundColor: colors,
+        borderColor:     borders,
+        borderWidth:     1,
+        borderRadius:    4,
+      }],
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: true,
+      animation:           { duration: 800, easing: "easeOutQuart" },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...tooltipDefaults,
+          callbacks: {
+            label: ctx => " Net IPs: " + fmtIPs(ctx.raw),
+          },
+        },
+      },
+      scales: {
+        ...sharedScales,
+        y: {
+          ...sharedScales.y,
+          ticks: {
+            color: "#7d8590",
+            callback: val => fmtIPs(val),
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderHistChart(historicalContext) {
+  const labels  = historicalContext.map(h => h.date);
+  const values  = historicalContext.map(h => h.diff_pct);
+
+  // Find the index of the "current" point
+  const currentIdx = historicalContext.findIndex(h => h.date === "current");
+
+  // Build per-point styling
+  const pointBg = labels.map((_, i) =>
+    i === currentIdx ? "#58a6ff" : "rgba(88,166,255,.4)"
+  );
+  const pointRadius = labels.map((_, i) =>
+    i === currentIdx ? 7 : 4
+  );
+  const pointBorder = labels.map((_, i) =>
+    i === currentIdx ? "#e6edf3" : "rgba(88,166,255,.7)"
+  );
+
+  new Chart(document.getElementById("histChart"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label:            "Diff %",
+        data:             values,
+        borderColor:      "rgba(88,166,255,.8)",
+        backgroundColor:  "rgba(88,166,255,.06)",
+        pointBackgroundColor: pointBg,
+        pointBorderColor:     pointBorder,
+        pointRadius:          pointRadius,
+        pointHoverRadius:     8,
+        borderWidth:      2,
+        fill:             true,
+        tension:          0.35,
+      }],
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: true,
+      animation:           { duration: 900, easing: "easeOutQuart" },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...tooltipDefaults,
+          callbacks: {
+            title: items => {
+              const idx = items[0].dataIndex;
+              const h   = historicalContext[idx];
+              return h.label ? `${h.date}  ←  this run` : h.date;
+            },
+            label: ctx => {
+              const h = historicalContext[ctx.dataIndex];
+              return [
+                ` Diff:       ${ctx.raw.toFixed(2)}%`,
+                ` vs current: ${h.vs_current > 0 ? "+" : ""}${h.vs_current.toFixed(2)}pp`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        ...sharedScales,
+        x: {
+          ...sharedScales.x,
+          ticks: {
+            color: (ctx) => {
+              return labels[ctx.index] === "current"
+                ? "#58a6ff"
+                : "#7d8590";
+            },
+            maxRotation: 30,
+          },
+        },
+        y: {
+          ...sharedScales.y,
+          ticks: {
+            color: "#7d8590",
+            callback: val => val.toFixed(1) + "%",
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderAsnTable(topChangedAsns) {
+  const tbody = document.getElementById("asnTableBody");
+  tbody.innerHTML = "";
+
+  if (!topChangedAsns || topChangedAsns.length === 0) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">
+      No ASN changes recorded</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  topChangedAsns.forEach(a => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${a.asn}</td>
+      <td class="pos">+${fmtNum(a.gained_pfx)}</td>
+      <td class="neg">−${fmtNum(a.lost_pfx)}</td>
+      <td class="${a.net_pfx >= 0 ? "pos" : "neg"}">
+        ${a.net_pfx >= 0 ? "+" : ""}${fmtNum(a.net_pfx)}
+      </td>
+      <td class="pos">${fmtIPs(a.gained_ips)}</td>
+      <td class="neg">${fmtIPs(-a.lost_ips)}</td>
+      <td class="${a.net_ips >= 0 ? "pos" : "neg"}">${fmtIPs(a.net_ips)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Main data flow ───────────────────────────────────────────────────────────
+
+async function loadDashboard() {
+  let data;
+
+  try {
+    const res = await fetch("./output.json");
+
+    if (!res.ok) {
+      throw new Error(
+        `HTTP ${res.status} ${res.statusText}. ` +
+        `Make sure output.json exists at the server root.\n\n` +
+        `To generate it, run:\n  python main.py --baseline data/baseline.asmap ` +
+        `--candidate data/candidate.asmap --json`
+      );
+    }
+
+    data = await res.json();
+  } catch (err) {
+    const banner = document.getElementById("errorBanner");
+    const body   = document.getElementById("errorBody");
+
+    let msg = err.message || String(err);
+
+    // Distinguish network / CORS from HTTP errors
+    if (err instanceof TypeError && err.message.includes("fetch")) {
+      msg =
+        "Could not reach output.json. This usually means the page is being " +
+        "opened directly from the filesystem (file://).\n\n" +
+        "Start a local HTTP server in the project directory:";
+    } else {
+      msg = msg + "\n\nStart a local HTTP server:";
+    }
+
+    body.textContent = msg;
+    banner.classList.add("visible");
+    return;
+  }
+
+  // ── Populate the dashboard ───────────────────────────────────────────────
+  const { summary, insights, top_changed_asns, generated_at } = data;
+
+  // Header
+  document.getElementById("generatedAt").textContent =
+    "Generated " + fmtDate(generated_at);
+  renderBadge(summary.severity_label);
+
+  // Stats
+  renderStatGrid(summary);
+
+  // Insight
+  renderInsight(insights);
+
+  // Charts
+  renderAsnChart(top_changed_asns || []);
+  renderHistChart(insights.historical_context || []);
+
+  // Table
+  renderAsnTable(top_changed_asns || []);
+
+  // Reveal dashboard
+  document.getElementById("dashboard").style.display = "block";
+}
+
+// Boot
+document.addEventListener("DOMContentLoaded", loadDashboard);
+</script>
+</body>
+</html>
