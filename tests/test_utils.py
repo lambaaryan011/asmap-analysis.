@@ -22,8 +22,8 @@ from utils import DiffResult, compare_maps, load_asmap, prefix_size
 # load_asmap()
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestLoadAsmap:
 
+class TestLoadAsmap:
     def test_loads_valid_file(self, single_prefix):
         m = load_asmap(single_prefix)
         assert m == {"1.0.0.0/24": "AS13335"}
@@ -75,8 +75,8 @@ class TestLoadAsmap:
 # prefix_size()
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPrefixSize:
 
+class TestPrefixSize:
     def test_slash_24_is_256_v4(self):
         v4, v6 = prefix_size("1.0.0.0/24")
         assert v4 == 256
@@ -100,7 +100,7 @@ class TestPrefixSize:
     def test_ipv6_slash_32(self):
         v4, v6 = prefix_size("2001:db8::/32")
         # 2^(128-32) = 2^96
-        assert v6 == 2 ** 96
+        assert v6 == 2**96
 
     def test_invalid_prefix_returns_zeros(self):
         v4, v6 = prefix_size("not-a-prefix")
@@ -121,25 +121,25 @@ class TestPrefixSize:
 # compare_maps() — prefix-count metrics
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestCompareMapsBasic:
 
+class TestCompareMapsBasic:
     def test_added_prefix(self, tmp_path):
         base = {"1.0.0.0/24": "AS13335"}
         cand = {"1.0.0.0/24": "AS13335", "2.0.0.0/24": "AS15169"}
         r = compare_maps(base, cand)
-        assert len(r.added)   == 1
+        assert len(r.added) == 1
         assert len(r.removed) == 0
         assert len(r.changed) == 0
-        assert r.unchanged    == 1
+        assert r.unchanged == 1
 
     def test_removed_prefix(self, tmp_path):
         base = {"1.0.0.0/24": "AS13335", "2.0.0.0/24": "AS15169"}
         cand = {"1.0.0.0/24": "AS13335"}
         r = compare_maps(base, cand)
         assert len(r.removed) == 1
-        assert len(r.added)   == 0
+        assert len(r.added) == 0
         assert len(r.changed) == 0
-        assert r.unchanged    == 1
+        assert r.unchanged == 1
 
     def test_changed_asn(self):
         base = {"1.0.0.0/24": "AS13335"}
@@ -148,19 +148,19 @@ class TestCompareMapsBasic:
         assert len(r.changed) == 1
         assert r.changed[0]["old_asn"] == "AS13335"
         assert r.changed[0]["new_asn"] == "AS15169"
-        assert r.changed[0]["prefix"]  == "1.0.0.0/24"
+        assert r.changed[0]["prefix"] == "1.0.0.0/24"
 
     def test_unchanged_prefix(self):
         base = {"1.0.0.0/24": "AS13335"}
         cand = {"1.0.0.0/24": "AS13335"}
         r = compare_maps(base, cand)
-        assert r.unchanged    == 1
+        assert r.unchanged == 1
         assert r.total_changes == 0
 
     def test_identical_maps(self, identical_maps):
         base_path, cand_path = identical_maps
         r = compare_maps(load_asmap(base_path), load_asmap(cand_path))
-        assert r.total_changes   == 0
+        assert r.total_changes == 0
         assert r.diff_percentage == 0.0
 
     def test_returns_diff_result(self):
@@ -171,39 +171,39 @@ class TestCompareMapsBasic:
         base = {f"{i}.0.0.0/24": "AS1" for i in range(10)}
         cand = {f"{i}.0.0.0/24": "AS1" for i in range(12)}
         r = compare_maps(base, cand)
-        assert r.total_baseline  == 10
+        assert r.total_baseline == 10
         assert r.total_candidate == 12
 
     def test_added_dict_has_prefix_and_asn_keys(self):
         r = compare_maps({}, {"1.0.0.0/24": "AS13335"})
         assert len(r.added) == 1
         assert "prefix" in r.added[0]
-        assert "asn"    in r.added[0]
+        assert "asn" in r.added[0]
 
     def test_changed_dict_has_required_keys(self):
         r = compare_maps({"1.0.0.0/24": "AS1"}, {"1.0.0.0/24": "AS2"})
         e = r.changed[0]
-        assert "prefix"   in e
-        assert "old_asn"  in e
-        assert "new_asn"  in e
+        assert "prefix" in e
+        assert "old_asn" in e
+        assert "new_asn" in e
         assert "ip_count" in e
 
     def test_multiple_changes_counted_correctly(self):
         base = {"1.0.0.0/24": "AS1", "2.0.0.0/24": "AS2", "3.0.0.0/24": "AS3"}
         cand = {"1.0.0.0/24": "AS1", "2.0.0.0/24": "AS9", "4.0.0.0/24": "AS4"}
         r = compare_maps(base, cand)
-        assert len(r.added)   == 1   # 4.0.0.0/24
-        assert len(r.removed) == 1   # 3.0.0.0/24
-        assert len(r.changed) == 1   # 2.0.0.0/24
-        assert r.unchanged    == 1   # 1.0.0.0/24
+        assert len(r.added) == 1  # 4.0.0.0/24
+        assert len(r.removed) == 1  # 3.0.0.0/24
+        assert len(r.changed) == 1  # 2.0.0.0/24
+        assert r.unchanged == 1  # 1.0.0.0/24
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # compare_maps() — diff_percentage
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestDiffPercentage:
 
+class TestDiffPercentage:
     def test_twenty_percent_churn(self, hundred_prefix_pair):
         base_path, cand_path = hundred_prefix_pair
         base = load_asmap(base_path)
@@ -234,8 +234,8 @@ class TestDiffPercentage:
 # compare_maps() — IP coverage metrics
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestCoverageMetrics:
 
+class TestCoverageMetrics:
     def test_added_coverage_v4_nonzero(self):
         r = compare_maps({}, {"1.0.0.0/24": "AS13335"})
         assert r.coverage_added_v4 == 256
@@ -271,7 +271,7 @@ class TestCoverageMetrics:
         base = {"2000::/1": "AS13335"}
         cand = {}
         r = compare_maps(base, cand)
-        assert r.coverage_removed_v6  > 0
+        assert r.coverage_removed_v6 > 0
         assert r.coverage_removed_v4 == 0
         assert r.coverage_change_pct_v6 > 0.0
 
@@ -286,8 +286,8 @@ class TestCoverageMetrics:
 # compare_maps() — severity score
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestSeverityScore:
 
+class TestSeverityScore:
     def test_identical_maps_score_low(self, identical_maps):
         b, c = identical_maps
         r = compare_maps(load_asmap(b), load_asmap(c))
@@ -344,8 +344,8 @@ class TestSeverityScore:
 # compare_maps() — top_changed_asns ranking
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestTopChangedAsns:
 
+class TestTopChangedAsns:
     def test_top_asns_returned(self):
         base = {"1.0.0.0/16": "AS1", "2.0.0.0/24": "AS2"}
         cand = {"3.0.0.0/16": "AS1", "2.0.0.0/24": "AS2"}
@@ -362,8 +362,7 @@ class TestTopChangedAsns:
 
     def test_top_asn_dict_has_required_keys(self):
         r = compare_maps({}, {"1.0.0.0/24": "AS13335"})
-        required = {"asn", "gained_pfx", "lost_pfx", "net_pfx",
-                    "gained_ips", "lost_ips", "net_ips"}
+        required = {"asn", "gained_pfx", "lost_pfx", "net_pfx", "gained_ips", "lost_ips", "net_ips"}
         assert required.issubset(set(r.top_changed_asns[0].keys()))
 
     def test_net_pfx_is_gained_minus_lost(self):
@@ -388,9 +387,11 @@ class TestTopChangedAsns:
         """
         base = {}
         cand = {
-            "100.0.0.0/8":  "AS_BIG",        # 1 prefix, 16 777 216 addresses
-            **{f"200.{i}.0.0/24": "AS_MANY"  # 100 prefixes, 25 600 addresses
-               for i in range(100)},
+            "100.0.0.0/8": "AS_BIG",  # 1 prefix, 16 777 216 addresses
+            **{
+                f"200.{i}.0.0/24": "AS_MANY"  # 100 prefixes, 25 600 addresses
+                for i in range(100)
+            },
         }
         r = compare_maps(base, cand)
         assert r.top_changed_asns[0]["asn"] == "AS_BIG"

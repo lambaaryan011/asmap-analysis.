@@ -26,10 +26,10 @@ from asmap_decoder import (
 # BitReader
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestBitReader:
 
+class TestBitReader:
     def test_read_single_bit_high(self):
-        r = BitReader(b"\x80")   # 0b10000000
+        r = BitReader(b"\x80")  # 0b10000000
         assert r.read_bit() == 1
 
     def test_read_single_bit_low(self):
@@ -53,16 +53,16 @@ class TestBitReader:
 
     def test_eof_raises(self):
         r = BitReader(b"\xff")
-        r.read_bits(8)   # consume all 8 bits
+        r.read_bits(8)  # consume all 8 bits
         with pytest.raises(EOFError):
             r.read_bit()
 
     def test_multi_byte_sequential(self):
         # 0x00 0xFF → first 8 bits are 0, next 8 are 1
         r = BitReader(b"\x00\xff")
-        first  = r.read_bits(8)
+        first = r.read_bits(8)
         second = r.read_bits(8)
-        assert first  == 0
+        assert first == 0
         assert second == 255
 
     def test_read_bits_returns_int(self):
@@ -73,6 +73,7 @@ class TestBitReader:
 # ══════════════════════════════════════════════════════════════════════════════
 # decode_asmap_file() — text fallback path
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestDecodeAsmapFileTextFallback:
     """
@@ -92,10 +93,13 @@ class TestDecodeAsmapFileTextFallback:
         assert m["1.0.0.0/24"] == "AS13335"
 
     def test_skips_comment_lines(self, tmp_path):
-        path = self._make_txt(tmp_path, [
-            "# header comment",
-            "1.0.0.0/24 AS13335",
-        ])
+        path = self._make_txt(
+            tmp_path,
+            [
+                "# header comment",
+                "1.0.0.0/24 AS13335",
+            ],
+        )
         m = decode_asmap_file(path)
         assert len(m) == 1
 
@@ -120,28 +124,34 @@ class TestDecodeAsmapFileTextFallback:
 
         See: asmap_decoder.py lines 190-199 (text format fallback section).
         """
-        path = self._make_txt(tmp_path, [
-            "# comment",
-            "",
-            "1.0.0.0/24 AS13335",
-            "bad line",          # two tokens — accepted by current fallback
-            "2.0.0.0/24 AS15169",
-        ])
+        path = self._make_txt(
+            tmp_path,
+            [
+                "# comment",
+                "",
+                "1.0.0.0/24 AS13335",
+                "bad line",  # two tokens — accepted by current fallback
+                "2.0.0.0/24 AS15169",
+            ],
+        )
         m = decode_asmap_file(path)
         # Current behaviour: 3 entries (including "bad" -> "line")
         assert len(m) == 3
         assert "1.0.0.0/24" in m
         assert "2.0.0.0/24" in m
-        assert "bad" in m          # pin current behaviour
+        assert "bad" in m  # pin current behaviour
 
     def test_loads_ipv6_prefixes(self, tmp_path):
-        path = self._make_txt(tmp_path, [
-            "2606:4700::/32 AS13335",
-            "2001:db8::/48 AS15169",
-        ])
+        path = self._make_txt(
+            tmp_path,
+            [
+                "2606:4700::/32 AS13335",
+                "2001:db8::/48 AS15169",
+            ],
+        )
         m = decode_asmap_file(path)
         assert "2606:4700::/32" in m
-        assert "2001:db8::/48"  in m
+        assert "2001:db8::/48" in m
 
     def test_returns_dict(self, tmp_path):
         path = self._make_txt(tmp_path, ["1.0.0.0/24 AS1"])
@@ -159,7 +169,7 @@ class TestDecodeAsmapFileTextFallback:
 
     def test_runtime_error_message_is_helpful(self, tmp_path):
         p = tmp_path / "garbage.asmap"
-        p.write_bytes(b"\x00" * 3)   # 3 zero-bytes → binary yields 0 entries; text yields nothing
+        p.write_bytes(b"\x00" * 3)  # 3 zero-bytes → binary yields 0 entries; text yields nothing
         with pytest.raises(RuntimeError) as exc_info:
             decode_asmap_file(str(p))
         assert "asmap-tool" in str(exc_info.value)
@@ -178,8 +188,8 @@ class TestDecodeAsmapFileTextFallback:
 # asmap_info()
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestAsmapInfo:
 
+class TestAsmapInfo:
     def _make_txt(self, tmp_path, lines):
         p = tmp_path / "info_test.txt"
         p.write_text("\n".join(lines), encoding="utf-8")

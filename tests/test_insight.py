@@ -26,6 +26,7 @@ from utils import DiffResult, compare_maps
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _make_result(
     diff_pct: float = 0.0,
     severity_label: str = "Low",
@@ -36,12 +37,12 @@ def _make_result(
 ) -> DiffResult:
     """Construct a minimal DiffResult for insight tests."""
     r = DiffResult()
-    r.diff_percentage      = diff_pct
-    r.severity_label       = severity_label
-    r.severity_score       = severity_score
+    r.diff_percentage = diff_pct
+    r.severity_label = severity_label
+    r.severity_score = severity_score
     r.coverage_change_pct_v4 = coverage_pct_v4
-    r.top_changed_asns     = top_asns or []
-    r.total_changes        = total_changes
+    r.top_changed_asns = top_asns or []
+    r.total_changes = total_changes
     return r
 
 
@@ -57,7 +58,7 @@ def _realistic_result(severity: str) -> DiffResult:
         base = {f"{i}.0.0.0/24": "AS1" for i in range(1, 101)}
         cand = dict(base)
         for i in range(10):
-            cand[f"{i}.0.0.0/24"] = "AS2"   # 10% churn → Moderate
+            cand[f"{i}.0.0.0/24"] = "AS2"  # 10% churn → Moderate
     elif severity == "Critical":
         base = {f"{i}.0.0.0/24": "AS1" for i in range(50)}
         cand = {f"{i}.0.0.0/24": "AS2" for i in range(50, 100)}
@@ -73,8 +74,8 @@ def _realistic_result(severity: str) -> DiffResult:
 # Internal constants derived from config.HISTORICAL_RUNS
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestHistoricalAverages:
 
+class TestHistoricalAverages:
     def test_past_runs_excludes_first_run(self):
         assert len(_PAST_RUNS) == len(HISTORICAL_RUNS) - 1
 
@@ -93,8 +94,8 @@ class TestHistoricalAverages:
 # generate_insight()
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestGenerateInsight:
 
+class TestGenerateInsight:
     def test_returns_string(self):
         r = _realistic_result("Low")
         assert isinstance(generate_insight(r), str)
@@ -128,10 +129,17 @@ class TestGenerateInsight:
             severity_label="Moderate",
             diff_pct=4.0,
             total_changes=10,
-            top_asns=[{
-                "asn": "AS13335", "gained_pfx": 6, "lost_pfx": 2,
-                "net_pfx": 4, "gained_ips": 1000, "lost_ips": 100, "net_ips": 900,
-            }],
+            top_asns=[
+                {
+                    "asn": "AS13335",
+                    "gained_pfx": 6,
+                    "lost_pfx": 2,
+                    "net_pfx": 4,
+                    "gained_ips": 1000,
+                    "lost_ips": 100,
+                    "net_ips": 900,
+                }
+            ],
         )
         text = generate_insight(r)
         assert "AS13335" in text
@@ -141,10 +149,17 @@ class TestGenerateInsight:
             severity_label="Low",
             diff_pct=1.0,
             total_changes=3,
-            top_asns=[{
-                "asn": "AS999", "gained_pfx": 3, "lost_pfx": 0,
-                "net_pfx": 3, "gained_ips": 768, "lost_ips": 0, "net_ips": 768,
-            }],
+            top_asns=[
+                {
+                    "asn": "AS999",
+                    "gained_pfx": 3,
+                    "lost_pfx": 0,
+                    "net_pfx": 3,
+                    "gained_ips": 768,
+                    "lost_ips": 0,
+                    "net_ips": 768,
+                }
+            ],
         )
         text = generate_insight(r)
         assert "gained" in text.lower()
@@ -154,10 +169,17 @@ class TestGenerateInsight:
             severity_label="Low",
             diff_pct=1.0,
             total_changes=3,
-            top_asns=[{
-                "asn": "AS999", "gained_pfx": 0, "lost_pfx": 3,
-                "net_pfx": -3, "gained_ips": 0, "lost_ips": 768, "net_ips": -768,
-            }],
+            top_asns=[
+                {
+                    "asn": "AS999",
+                    "gained_pfx": 0,
+                    "lost_pfx": 3,
+                    "net_pfx": -3,
+                    "gained_ips": 0,
+                    "lost_ips": 768,
+                    "net_ips": -768,
+                }
+            ],
         )
         text = generate_insight(r)
         assert "lost" in text.lower()
@@ -208,8 +230,8 @@ class TestGenerateInsight:
 # historical_context()
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestHistoricalContext:
 
+class TestHistoricalContext:
     def test_returns_list(self):
         r = _make_result()
         ctx = historical_context(r)
@@ -247,8 +269,8 @@ class TestHistoricalContext:
         r = _make_result(diff_pct=3.0)
         ctx = historical_context(r)
         for entry in ctx:
-            assert "date"       in entry
-            assert "diff_pct"   in entry
+            assert "date" in entry
+            assert "diff_pct" in entry
             assert "vs_current" in entry
 
     def test_diff_pct_matches_config(self):
@@ -262,8 +284,8 @@ class TestHistoricalContext:
 # severity_explanation()
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestSeverityExplanation:
 
+class TestSeverityExplanation:
     def test_returns_string(self):
         r = _realistic_result("Low")
         assert isinstance(severity_explanation(r), str)

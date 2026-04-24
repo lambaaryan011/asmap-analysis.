@@ -21,10 +21,11 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-MIN_ENTRIES = 10   # fewer results than this → assume binary parse failed
+MIN_ENTRIES = 10  # fewer results than this → assume binary parse failed
 
 
 # ── Bit-stream reader ─────────────────────────────────────────────────────────
+
 
 class BitReader:
     """Read a byte buffer one bit at a time, MSB first."""
@@ -32,15 +33,15 @@ class BitReader:
     def __init__(self, data: bytes) -> None:
         self._data = data
         self._byte = 0
-        self._bit  = 8   # triggers byte load on first read_bit()
+        self._bit = 8  # triggers byte load on first read_bit()
 
     def read_bit(self) -> int:
         if self._bit >= 8:
             if self._byte >= len(self._data):
                 raise EOFError("unexpected end of .asmap bitstream")
-            self._cur  = self._data[self._byte]
+            self._cur = self._data[self._byte]
             self._byte += 1
-            self._bit  = 0
+            self._bit = 0
         bit = (self._cur >> (7 - self._bit)) & 1
         self._bit += 1
         return bit
@@ -54,6 +55,7 @@ class BitReader:
 
 # ── ASN varint decoder ────────────────────────────────────────────────────────
 
+
 def _read_asn(reader: BitReader) -> int:
     """
     Read a variable-length ASN from the bitstream.
@@ -65,16 +67,17 @@ def _read_asn(reader: BitReader) -> int:
       11 → 32-bit value  (all valid ASNs)
     """
     prefix = reader.read_bits(2)
-    widths  = {0: 8, 1: 16, 2: 24, 3: 32}
+    widths = {0: 8, 1: 16, 2: 24, 3: 32}
     return reader.read_bits(widths[prefix])
 
 
 # ── Trie traversal ────────────────────────────────────────────────────────────
 
+
 def _decode_trie(
-    reader:    BitReader,
+    reader: BitReader,
     path_bits: list[int],
-    results:   list[tuple[str, str]],
+    results: list[tuple[str, str]],
 ) -> None:
     """
     DFS traversal of the bit-trie.
@@ -93,7 +96,7 @@ def _decode_trie(
         except EOFError:
             return
         if asn == 0:
-            return   # unrouted / not mapped
+            return  # unrouted / not mapped
         prefix_str = _bits_to_prefix(path_bits)
         if prefix_str:
             results.append((prefix_str, f"AS{asn}"))
@@ -108,6 +111,7 @@ def _decode_trie(
 
 # ── Bit-path → prefix string ──────────────────────────────────────────────────
 
+
 def _bits_to_prefix(bits: list[int]) -> str | None:
     """
     Convert a trie path (list of 0/1 bits) to an IP prefix string.
@@ -121,10 +125,7 @@ def _bits_to_prefix(bits: list[int]) -> str | None:
     try:
         if n <= 32:
             padded = bits + [0] * (32 - n)
-            octets = [
-                sum(padded[i * 8 + j] << (7 - j) for j in range(8))
-                for i in range(4)
-            ]
+            octets = [sum(padded[i * 8 + j] << (7 - j) for j in range(8)) for i in range(4)]
             return f"{'.'.join(map(str, octets))}/{n}"
         else:
             padded = (bits + [0] * 128)[:128]
@@ -139,6 +140,7 @@ def _bits_to_prefix(bits: list[int]) -> str | None:
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def decode_asmap_file(filepath: str) -> dict[str, str]:
     """
@@ -174,7 +176,9 @@ def decode_asmap_file(filepath: str) -> dict[str, str]:
         _decode_trie(reader, [], results)
         log.debug("binary trie decode: %d entries", len(results))
     except Exception as exc:
-        log.warning("binary trie decode raised %s: %s — trying text fallback", type(exc).__name__, exc)
+        log.warning(
+            "binary trie decode raised %s: %s — trying text fallback", type(exc).__name__, exc
+        )
         results = []
 
     if len(results) >= MIN_ENTRIES:
@@ -184,7 +188,7 @@ def decode_asmap_file(filepath: str) -> dict[str, str]:
     # ── Attempt 2: text format fallback ──────────────────────────────────────
     log.info("binary decode yielded %d entries — trying text format", len(results))
     try:
-        text    = raw.decode("utf-8", errors="ignore")
+        text = raw.decode("utf-8", errors="ignore")
         mapping: dict[str, str] = {}
         skipped = 0
         for line_num, line in enumerate(text.splitlines(), 1):
@@ -220,17 +224,17 @@ def asmap_info(filepath: str) -> dict:
     if not path.exists():
         return {"error": f"file not found: {filepath!r}"}
     size = path.stat().st_size
-    raw  = path.read_bytes()
+    raw = path.read_bytes()
     sample: list[tuple[str, str]] = []
     try:
-        reader = BitReader(raw[:min(len(raw), 65_536)])   # first 64 KB only
+        reader = BitReader(raw[: min(len(raw), 65_536)])  # first 64 KB only
         _decode_trie(reader, [], sample)
     except Exception:
         pass
     return {
-        "filepath":       filepath,
-        "size_bytes":     size,
-        "size_kb":        round(size / 1024, 1),
-        "format":         "binary" if len(sample) >= MIN_ENTRIES else "text/unknown",
+        "filepath": filepath,
+        "size_bytes": size,
+        "size_kb": round(size / 1024, 1),
+        "format": "binary" if len(sample) >= MIN_ENTRIES else "text/unknown",
         "sample_entries": sample[:5],
     }

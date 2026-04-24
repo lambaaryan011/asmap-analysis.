@@ -34,16 +34,14 @@ DOWNLOADS: list[dict[str, str]] = [
     {
         "label": "Baseline  (2024-04-05)",
         "url": (
-            "https://raw.githubusercontent.com/bitcoin-core/asmap-data"
-            "/master/2024-04-05/asmap.dat"
+            "https://raw.githubusercontent.com/bitcoin-core/asmap-data/master/2024-04-05/asmap.dat"
         ),
         "dest": str(DATA_DIR / "baseline.asmap"),
     },
     {
         "label": "Candidate (2024-06-21)",
         "url": (
-            "https://raw.githubusercontent.com/bitcoin-core/asmap-data"
-            "/master/2024-06-21/asmap.dat"
+            "https://raw.githubusercontent.com/bitcoin-core/asmap-data/master/2024-06-21/asmap.dat"
         ),
         "dest": str(DATA_DIR / "candidate.asmap"),
     },
@@ -51,10 +49,9 @@ DOWNLOADS: list[dict[str, str]] = [
 
 TIMEOUT_SECONDS = 15
 USER_AGENT = (
-    "asmap-diff-analyzer/1.0 "
-    "(Summer-of-Bitcoin-2026; "
-    "+https://github.com/bitcoin-core/asmap-data)"
+    "asmap-diff-analyzer/1.0 (Summer-of-Bitcoin-2026; +https://github.com/bitcoin-core/asmap-data)"
 )
+
 
 # ANSI helpers (disabled on Windows without ANSI support)
 def _ansi(code: str) -> str:
@@ -62,16 +59,18 @@ def _ansi(code: str) -> str:
         return f"\033[{code}m"
     return ""
 
-RESET  = _ansi("0")
-BOLD   = _ansi("1")
-DIM    = _ansi("2")
-GREEN  = _ansi("92")
-RED    = _ansi("91")
+
+RESET = _ansi("0")
+BOLD = _ansi("1")
+DIM = _ansi("2")
+GREEN = _ansi("92")
+RED = _ansi("91")
 YELLOW = _ansi("93")
-CYAN   = _ansi("96")
+CYAN = _ansi("96")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _fmt_bytes(n: int) -> str:
     """Return a compact human-readable byte count."""
@@ -177,15 +176,13 @@ def _download(label: str, url: str, dest: str) -> bool:
         return False
 
     elapsed = time.monotonic() - t_start
-    size    = _fmt_bytes(len(data))
-    print(
-        f"  {GREEN}✓  Saved{RESET}      {dest}\n"
-        f"     {DIM}{size} in {elapsed:.1f}s{RESET}"
-    )
+    size = _fmt_bytes(len(data))
+    print(f"  {GREEN}✓  Saved{RESET}      {dest}\n     {DIM}{size} in {elapsed:.1f}s{RESET}")
     return True
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     print(f"\n{BOLD}ASmap Historical Data Fetcher{RESET}")

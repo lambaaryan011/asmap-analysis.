@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 
 try:
     from tabulate import tabulate
+
     HAS_TABULATE = True
 except ImportError:
     HAS_TABULATE = False
@@ -43,14 +44,17 @@ from utils import DiffResult, compare_maps, load_asmap
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
 
+
 def setup_logging(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.WARNING
     logging.basicConfig(format=LOG_FORMAT, datefmt=LOG_DATE, level=level)
+
 
 log = logging.getLogger(__name__)
 
 
 # ── Smart loader ──────────────────────────────────────────────────────────────
+
 
 def smart_load(label: str, path: str) -> dict[str, str]:
     """
@@ -83,12 +87,13 @@ def smart_load(label: str, path: str) -> dict[str, str]:
 
 # ── Formatters ────────────────────────────────────────────────────────────────
 
+
 def fmt_ips(n: int) -> str:
     """Format a large IP count into a compact human-readable string."""
-    if n >= 10 ** 18:
-        return f"{n / 10 ** 18:.1f}E"
-    if n >= 10 ** 12:
-        return f"{n / 10 ** 12:.1f}T"
+    if n >= 10**18:
+        return f"{n / 10**18:.1f}E"
+    if n >= 10**12:
+        return f"{n / 10**12:.1f}T"
     if n >= 1_000_000_000:
         return f"{n / 1_000_000_000:.2f}B"
     if n >= 1_000_000:
@@ -100,27 +105,30 @@ def fmt_ips(n: int) -> str:
 
 # ── ANSI colors ───────────────────────────────────────────────────────────────
 
+
 def _tty() -> bool:
     return hasattr(sys.stdout, "isatty") and sys.stdout.isatty() and os.name != "nt"
 
-G    = "\033[92m" if _tty() else ""
-R    = "\033[91m" if _tty() else ""
-Y    = "\033[93m" if _tty() else ""
-B    = "\033[94m" if _tty() else ""
-CY   = "\033[96m" if _tty() else ""
-BOLD = "\033[1m"  if _tty() else ""
-DIM  = "\033[2m"  if _tty() else ""
-RST  = "\033[0m"  if _tty() else ""
+
+G = "\033[92m" if _tty() else ""
+R = "\033[91m" if _tty() else ""
+Y = "\033[93m" if _tty() else ""
+B = "\033[94m" if _tty() else ""
+CY = "\033[96m" if _tty() else ""
+BOLD = "\033[1m" if _tty() else ""
+DIM = "\033[2m" if _tty() else ""
+RST = "\033[0m" if _tty() else ""
 
 SEV_COLOR: dict[str, str] = {
-    "Low":      G,
+    "Low": G,
     "Moderate": Y,
-    "High":     R,
+    "High": R,
     "Critical": R + BOLD,
 }
 
 
 # ── Terminal output ───────────────────────────────────────────────────────────
+
 
 def print_summary(r: DiffResult, show_top: int, explain: bool) -> None:
     sc = SEV_COLOR.get(r.severity_label, "")
@@ -152,24 +160,35 @@ def print_summary(r: DiffResult, show_top: int, explain: bool) -> None:
         rows = []
         for a in r.top_changed_asns[:show_top]:
             net_pfx = f"{a['net_pfx']:+}"
-            net_ips = (f"{G}+{fmt_ips(a['net_ips'])}{RST}"
-                       if a["net_ips"] >= 0
-                       else f"{R}-{fmt_ips(abs(a['net_ips']))}{RST}")
-            rows.append([a["asn"],
-                         f"{G}+{a['gained_pfx']}{RST}",
-                         f"{R}-{a['lost_pfx']}{RST}",
-                         net_pfx, net_ips])
+            net_ips = (
+                f"{G}+{fmt_ips(a['net_ips'])}{RST}"
+                if a["net_ips"] >= 0
+                else f"{R}-{fmt_ips(abs(a['net_ips']))}{RST}"
+            )
+            rows.append(
+                [
+                    a["asn"],
+                    f"{G}+{a['gained_pfx']}{RST}",
+                    f"{R}-{a['lost_pfx']}{RST}",
+                    net_pfx,
+                    net_ips,
+                ]
+            )
         if HAS_TABULATE:
-            print(tabulate(rows,
-                           headers=["ASN", "Gained", "Lost", "Net pfx", "Net IPs"],
-                           tablefmt="simple"))
+            print(
+                tabulate(
+                    rows, headers=["ASN", "Gained", "Lost", "Net pfx", "Net IPs"], tablefmt="simple"
+                )
+            )
         else:
             print(f"  {'ASN':<12} {'Gained':>8} {'Lost':>8} {'Net pfx':>10} {'Net IPs':>12}")
             print("  " + "─" * 54)
             for a in r.top_changed_asns[:show_top]:
                 nips = f"{'+' if a['net_ips'] >= 0 else '-'}{fmt_ips(abs(a['net_ips']))}"
-                print(f"  {a['asn']:<12} {a['gained_pfx']:>8} {a['lost_pfx']:>8}"
-                      f" {a['net_pfx']:>+10} {nips:>12}")
+                print(
+                    f"  {a['asn']:<12} {a['gained_pfx']:>8} {a['lost_pfx']:>8}"
+                    f" {a['net_pfx']:>+10} {nips:>12}"
+                )
 
     # Insight paragraph
     print(f"\n{BOLD}{CY}Insight:{RST}")
@@ -181,14 +200,11 @@ def print_summary(r: DiffResult, show_top: int, explain: bool) -> None:
     print(f"\n{BOLD}Historical context:{RST}")
     hist = historical_context(r)
     if HAS_TABULATE:
-        rows_h = [[h["date"],
-                   f"{h['diff_pct']:.2f}%",
-                   f"{h['vs_current']:+.2f}pp",
-                   h.get("label", "")]
-                  for h in hist]
-        print(tabulate(rows_h,
-                       headers=["Run date", "Diff %", "vs current", ""],
-                       tablefmt="simple"))
+        rows_h = [
+            [h["date"], f"{h['diff_pct']:.2f}%", f"{h['vs_current']:+.2f}pp", h.get("label", "")]
+            for h in hist
+        ]
+        print(tabulate(rows_h, headers=["Run date", "Diff %", "vs current", ""], tablefmt="simple"))
     else:
         print(f"  {'Run date':<14} {'Diff %':>8}  {'vs current':>12}")
         print("  " + "─" * 40)
@@ -205,31 +221,32 @@ def print_summary(r: DiffResult, show_top: int, explain: bool) -> None:
 
 # ── JSON output ───────────────────────────────────────────────────────────────
 
+
 def write_json(r: DiffResult, path: str) -> None:
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": {
-            "baseline_total":          r.total_baseline,
-            "candidate_total":         r.total_candidate,
-            "added":                   len(r.added),
-            "removed":                 len(r.removed),
-            "changed":                 len(r.changed),
-            "unchanged":               r.unchanged,
-            "total_changes":           r.total_changes,
-            "diff_percentage":         r.diff_percentage,
-            "coverage_change_pct_v4":  r.coverage_change_pct_v4,
-            "coverage_change_pct_v6":  r.coverage_change_pct_v6,
-            "severity_score":          r.severity_score,
-            "severity_label":          r.severity_label,
+            "baseline_total": r.total_baseline,
+            "candidate_total": r.total_candidate,
+            "added": len(r.added),
+            "removed": len(r.removed),
+            "changed": len(r.changed),
+            "unchanged": r.unchanged,
+            "total_changes": r.total_changes,
+            "diff_percentage": r.diff_percentage,
+            "coverage_change_pct_v4": r.coverage_change_pct_v4,
+            "coverage_change_pct_v6": r.coverage_change_pct_v6,
+            "severity_score": r.severity_score,
+            "severity_label": r.severity_label,
         },
         "insights": {
-            "summary":            generate_insight(r),
-            "severity_formula":   severity_explanation(r),
+            "summary": generate_insight(r),
+            "severity_formula": severity_explanation(r),
             "historical_context": historical_context(r),
         },
         "top_changed_asns": r.top_changed_asns,
         "changes": {
-            "added":   r.added[:SAMPLE_CHANGE_LIMIT],
+            "added": r.added[:SAMPLE_CHANGE_LIMIT],
             "removed": r.removed[:SAMPLE_CHANGE_LIMIT],
             "changed": r.changed[:SAMPLE_CHANGE_LIMIT],
         },
@@ -242,6 +259,7 @@ def write_json(r: DiffResult, path: str) -> None:
 
 # ── CSV output ────────────────────────────────────────────────────────────────
 
+
 def write_csv(r: DiffResult, path: str) -> None:
     import ipaddress
 
@@ -253,22 +271,38 @@ def write_csv(r: DiffResult, path: str) -> None:
 
     rows: list[dict] = []
     for e in r.added:
-        rows.append({"type": "added",   "prefix": e["prefix"],
-                     "old_asn": "",          "new_asn": e["asn"],
-                     "ip_count": ip_count(e["prefix"])})
+        rows.append(
+            {
+                "type": "added",
+                "prefix": e["prefix"],
+                "old_asn": "",
+                "new_asn": e["asn"],
+                "ip_count": ip_count(e["prefix"]),
+            }
+        )
     for e in r.removed:
-        rows.append({"type": "removed", "prefix": e["prefix"],
-                     "old_asn": e["asn"],    "new_asn": "",
-                     "ip_count": ip_count(e["prefix"])})
+        rows.append(
+            {
+                "type": "removed",
+                "prefix": e["prefix"],
+                "old_asn": e["asn"],
+                "new_asn": "",
+                "ip_count": ip_count(e["prefix"]),
+            }
+        )
     for e in r.changed:
-        rows.append({"type": "changed", "prefix": e["prefix"],
-                     "old_asn": e["old_asn"], "new_asn": e["new_asn"],
-                     "ip_count": e["ip_count"]})
+        rows.append(
+            {
+                "type": "changed",
+                "prefix": e["prefix"],
+                "old_asn": e["old_asn"],
+                "new_asn": e["new_asn"],
+                "ip_count": e["ip_count"],
+            }
+        )
 
     with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["type", "prefix", "old_asn", "new_asn", "ip_count"]
-        )
+        writer = csv.DictWriter(f, fieldnames=["type", "prefix", "old_asn", "new_asn", "ip_count"])
         writer.writeheader()
         writer.writerows(rows)
     log.info("CSV written to %s (%d rows)", path, len(rows))
@@ -277,11 +311,12 @@ def write_csv(r: DiffResult, path: str) -> None:
 
 # ── Markdown PR summary ───────────────────────────────────────────────────────
 
+
 def write_markdown(r: DiffResult, path: str) -> None:
-    badge  = {"Low": "🟢", "Moderate": "🟡", "High": "🟠", "Critical": "🔴"}
-    b      = badge.get(r.severity_label, "⚪")
-    ts     = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    lim    = SAMPLE_CHANGE_LIMIT
+    badge = {"Low": "🟢", "Moderate": "🟡", "High": "🟠", "Critical": "🔴"}
+    b = badge.get(r.severity_label, "⚪")
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    lim = SAMPLE_CHANGE_LIMIT
 
     lines = [
         "## ASmap Diff Report",
@@ -306,10 +341,12 @@ def write_markdown(r: DiffResult, path: str) -> None:
     ]
     for a in r.top_changed_asns:
         net_pfx = f"+{a['net_pfx']}" if a["net_pfx"] >= 0 else str(a["net_pfx"])
-        net_ips = (f"+{fmt_ips(a['net_ips'])}"
-                   if a["net_ips"] >= 0
-                   else f"-{fmt_ips(abs(a['net_ips']))}")
-        lines.append(f"| {a['asn']} | +{a['gained_pfx']} | -{a['lost_pfx']} | {net_pfx} | {net_ips} |")
+        net_ips = (
+            f"+{fmt_ips(a['net_ips'])}" if a["net_ips"] >= 0 else f"-{fmt_ips(abs(a['net_ips']))}"
+        )
+        lines.append(
+            f"| {a['asn']} | +{a['gained_pfx']} | -{a['lost_pfx']} | {net_pfx} | {net_ips} |"
+        )
 
     lines += [
         "\n### Historical Context\n",
@@ -317,7 +354,7 @@ def write_markdown(r: DiffResult, path: str) -> None:
         "|----------|--------|------------|",
     ]
     for h in historical_context(r):
-        vs  = f"+{h['vs_current']:.2f}pp" if h["vs_current"] >= 0 else f"{h['vs_current']:.2f}pp"
+        vs = f"+{h['vs_current']:.2f}pp" if h["vs_current"] >= 0 else f"{h['vs_current']:.2f}pp"
         lbl = "  ← this run" if h.get("label") else ""
         lines.append(f"| {h['date']} | {h['diff_pct']:.2f}% | {vs}{lbl} |")
 
@@ -347,6 +384,7 @@ def write_markdown(r: DiffResult, path: str) -> None:
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="ASmap Diff Analyzer — compare two ASmap files (.asmap binary or text)",
@@ -364,13 +402,17 @@ convert binary .asmap to text manually:
   asmap-tool decode file.asmap > output.txt
         """,
     )
-    parser.add_argument("--baseline",  required=True,  help="Baseline ASmap file (.asmap or .txt)")
-    parser.add_argument("--candidate", required=True,  help="Candidate ASmap file (.asmap or .txt)")
-    parser.add_argument("--top",     type=int, default=DEFAULT_TOP_ASNS,
-                        help=f"Top N ASNs to show (default: {DEFAULT_TOP_ASNS})")
-    parser.add_argument("--json",    action="store_true", help=f"Write {DEFAULT_JSON_PATH}")
-    parser.add_argument("--csv",     action="store_true", help=f"Write {DEFAULT_CSV_PATH}")
-    parser.add_argument("--md",      action="store_true", help=f"Write {DEFAULT_MD_PATH} (PR-ready)")
+    parser.add_argument("--baseline", required=True, help="Baseline ASmap file (.asmap or .txt)")
+    parser.add_argument("--candidate", required=True, help="Candidate ASmap file (.asmap or .txt)")
+    parser.add_argument(
+        "--top",
+        type=int,
+        default=DEFAULT_TOP_ASNS,
+        help=f"Top N ASNs to show (default: {DEFAULT_TOP_ASNS})",
+    )
+    parser.add_argument("--json", action="store_true", help=f"Write {DEFAULT_JSON_PATH}")
+    parser.add_argument("--csv", action="store_true", help=f"Write {DEFAULT_CSV_PATH}")
+    parser.add_argument("--md", action="store_true", help=f"Write {DEFAULT_MD_PATH} (PR-ready)")
     parser.add_argument("--explain", action="store_true", help="Show severity score breakdown")
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
@@ -378,7 +420,7 @@ convert binary .asmap to text manually:
     setup_logging(args.verbose)
 
     print(f"Loading baseline  : {args.baseline}")
-    baseline  = smart_load("baseline",  args.baseline)
+    baseline = smart_load("baseline", args.baseline)
 
     print(f"Loading candidate : {args.candidate}")
     candidate = smart_load("candidate", args.candidate)
@@ -389,9 +431,9 @@ convert binary .asmap to text manually:
     print_summary(result, show_top=args.top, explain=args.explain)
 
     if args.json:
-        write_json(result,    DEFAULT_JSON_PATH)
+        write_json(result, DEFAULT_JSON_PATH)
     if args.csv:
-        write_csv(result,     DEFAULT_CSV_PATH)
+        write_csv(result, DEFAULT_CSV_PATH)
     if args.md:
         write_markdown(result, DEFAULT_MD_PATH)
 

@@ -10,8 +10,8 @@ simplest possible ASmap that exercises the feature under test.
 
 import pytest
 
-
 # ── ASmap file factory ────────────────────────────────────────────────────────
+
 
 def _write_asmap(path, lines: list[str]) -> str:
     """Write a list of lines to a temp .txt file and return its path string."""
@@ -21,6 +21,7 @@ def _write_asmap(path, lines: list[str]) -> str:
 
 
 # ── Tiny maps (prefix-count focused) ─────────────────────────────────────────
+
 
 @pytest.fixture
 def single_prefix(tmp_path):
@@ -33,10 +34,13 @@ def two_prefixes(tmp_path):
     """Two distinct prefixes, two distinct ASNs."""
     subdir = tmp_path / "base"
     subdir.mkdir(parents=True, exist_ok=True)
-    return _write_asmap(subdir, [
-        "1.0.0.0/24 AS13335",
-        "2.0.0.0/24 AS15169",
-    ])
+    return _write_asmap(
+        subdir,
+        [
+            "1.0.0.0/24 AS13335",
+            "2.0.0.0/24 AS15169",
+        ],
+    )
 
 
 @pytest.fixture
@@ -52,26 +56,34 @@ def identical_maps(tmp_path):
 
 # ── Coverage-focused maps ─────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def large_prefix_map(tmp_path):
     """Baseline with a /16 (65 536 addresses) and a /24 (256 addresses)."""
-    return _write_asmap(tmp_path, [
-        "10.0.0.0/16 AS13335",
-        "11.0.0.0/24 AS15169",
-    ])
+    return _write_asmap(
+        tmp_path,
+        [
+            "10.0.0.0/16 AS13335",
+            "11.0.0.0/24 AS15169",
+        ],
+    )
 
 
 @pytest.fixture
 def ipv6_map(tmp_path):
     """A map containing both IPv4 and IPv6 prefixes."""
-    return _write_asmap(tmp_path, [
-        "1.0.0.0/24 AS13335",
-        "2606:4700::/32 AS13335",
-        "2001:db8::/48 AS15169",
-    ])
+    return _write_asmap(
+        tmp_path,
+        [
+            "1.0.0.0/24 AS13335",
+            "2606:4700::/32 AS13335",
+            "2001:db8::/48 AS15169",
+        ],
+    )
 
 
 # ── Dirty-input maps (parser robustness) ─────────────────────────────────────
+
 
 @pytest.fixture
 def map_with_comments_and_blanks(tmp_path):
@@ -89,6 +101,7 @@ def map_with_comments_and_blanks(tmp_path):
 
 
 # ── Hundred-prefix map for percentage tests ───────────────────────────────────
+
 
 @pytest.fixture
 def hundred_prefix_baseline(tmp_path):
@@ -108,10 +121,9 @@ def hundred_prefix_candidate(tmp_path):
     NOTE: tmp_path here is a different directory from hundred_prefix_baseline.
     Use the hundred_prefix_pair fixture when you need both files for compare_maps.
     """
-    lines = (
-        [f"{i}.0.0.0/24 AS13335" for i in range(1, 91)]
-        + [f"200.{i}.0.0/24 AS15169" for i in range(10)]
-    )
+    lines = [f"{i}.0.0.0/24 AS13335" for i in range(1, 91)] + [
+        f"200.{i}.0.0/24 AS15169" for i in range(10)
+    ]
     return _write_asmap(tmp_path, lines)
 
 
@@ -126,10 +138,9 @@ def hundred_prefix_pair(tmp_path):
     → 10 removed + 10 added = 20 total changes out of 100 → diff_percentage == 20.0
     """
     base_lines = [f"{i}.0.0.0/24 AS13335" for i in range(1, 101)]
-    cand_lines = (
-        [f"{i}.0.0.0/24 AS13335" for i in range(1, 91)]
-        + [f"200.{i}.0.0/24 AS15169" for i in range(10)]
-    )
+    cand_lines = [f"{i}.0.0.0/24 AS13335" for i in range(1, 91)] + [
+        f"200.{i}.0.0/24 AS15169" for i in range(10)
+    ]
     base_path = tmp_path / "baseline.txt"
     cand_path = tmp_path / "candidate.txt"
     base_path.write_text("\n".join(base_lines), encoding="utf-8")
@@ -138,6 +149,7 @@ def hundred_prefix_pair(tmp_path):
 
 
 # ── High-churn map (severity: Critical threshold) ────────────────────────────
+
 
 @pytest.fixture
 def high_churn_maps(tmp_path):

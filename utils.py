@@ -29,40 +29,42 @@ log = logging.getLogger(__name__)
 
 # ── Data class ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class DiffResult:
     """Holds the complete output of compare_maps()."""
 
-    added:           list[dict] = field(default_factory=list)
-    removed:         list[dict] = field(default_factory=list)
-    changed:         list[dict] = field(default_factory=list)
-    unchanged:       int        = 0
-    total_baseline:  int        = 0
-    total_candidate: int        = 0
+    added: list[dict] = field(default_factory=list)
+    removed: list[dict] = field(default_factory=list)
+    changed: list[dict] = field(default_factory=list)
+    unchanged: int = 0
+    total_baseline: int = 0
+    total_candidate: int = 0
 
     # Prefix-count metrics
-    total_changes:   int   = 0
+    total_changes: int = 0
     diff_percentage: float = 0.0
 
     # IP coverage metrics
-    coverage_added_v4:      int   = 0
-    coverage_removed_v4:    int   = 0
-    coverage_changed_v4:    int   = 0
-    coverage_added_v6:      int   = 0
-    coverage_removed_v6:    int   = 0
-    coverage_changed_v6:    int   = 0
+    coverage_added_v4: int = 0
+    coverage_removed_v4: int = 0
+    coverage_changed_v4: int = 0
+    coverage_added_v6: int = 0
+    coverage_removed_v6: int = 0
+    coverage_changed_v6: int = 0
     coverage_change_pct_v4: float = 0.0
     coverage_change_pct_v6: float = 0.0
 
     # Severity
     severity_score: float = 0.0
-    severity_label: str   = "Low"
+    severity_label: str = "Low"
 
     # Top ASNs
     top_changed_asns: list[dict] = field(default_factory=list)
 
 
 # ── File loading ──────────────────────────────────────────────────────────────
+
 
 def load_asmap(file_path: str) -> dict[str, str]:
     """
@@ -105,6 +107,7 @@ def load_asmap(file_path: str) -> dict[str, str]:
 
 # ── IP coverage helpers ───────────────────────────────────────────────────────
 
+
 def prefix_size(prefix: str) -> tuple[int, int]:
     """
     Return (ipv4_address_count, ipv6_address_count) for a prefix string.
@@ -129,8 +132,9 @@ def prefix_size(prefix: str) -> tuple[int, int]:
 
 # ── Core comparison ───────────────────────────────────────────────────────────
 
+
 def compare_maps(
-    baseline:  dict[str, str],
+    baseline: dict[str, str],
     candidate: dict[str, str],
 ) -> DiffResult:
     """
@@ -156,8 +160,12 @@ def compare_maps(
     )
 
     all_prefixes: set[str] = set(baseline.keys()) | set(candidate.keys())
-    log.info("comparing %d baseline vs %d candidate prefixes (%d unique)",
-             len(baseline), len(candidate), len(all_prefixes))
+    log.info(
+        "comparing %d baseline vs %d candidate prefixes (%d unique)",
+        len(baseline),
+        len(candidate),
+        len(all_prefixes),
+    )
 
     for prefix in all_prefixes:
         b_asn: str | None = baseline.get(prefix)
@@ -178,12 +186,14 @@ def compare_maps(
 
         elif b_asn != c_asn:
             # Same prefix, different ASN assignment
-            result.changed.append({
-                "prefix":   prefix,
-                "old_asn":  b_asn,
-                "new_asn":  c_asn,
-                "ip_count": v4 + v6,
-            })
+            result.changed.append(
+                {
+                    "prefix": prefix,
+                    "old_asn": b_asn,
+                    "new_asn": c_asn,
+                    "ip_count": v4 + v6,
+                }
+            )
             result.coverage_changed_v4 += v4
             result.coverage_changed_v6 += v6
 
@@ -191,31 +201,31 @@ def compare_maps(
             result.unchanged += 1
 
     # Prefix-count diff %
-    result.total_changes   = len(result.added) + len(result.removed) + len(result.changed)
-    result.diff_percentage = round(
-        result.total_changes / max(result.total_baseline, 1) * 100, 2
-    )
+    result.total_changes = len(result.added) + len(result.removed) + len(result.changed)
+    result.diff_percentage = round(result.total_changes / max(result.total_baseline, 1) * 100, 2)
 
     # IP coverage change % vs total routable space
-    total_v4 = (result.coverage_added_v4
-                + result.coverage_removed_v4
-                + result.coverage_changed_v4)
-    total_v6 = (result.coverage_added_v6
-                + result.coverage_removed_v6
-                + result.coverage_changed_v6)
+    total_v4 = result.coverage_added_v4 + result.coverage_removed_v4 + result.coverage_changed_v4
+    total_v6 = result.coverage_added_v6 + result.coverage_removed_v6 + result.coverage_changed_v6
     result.coverage_change_pct_v4 = round(total_v4 / TOTAL_IPV4_ADDRESSES * 100, 6)
     result.coverage_change_pct_v6 = round(total_v6 / TOTAL_IPV6_ADDRESSES * 100, 6)
 
     result.top_changed_asns = _top_changed_asns(result)
     result.severity_score, result.severity_label = _compute_severity(result)
 
-    log.info("diff complete: +%d added, -%d removed, ~%d changed, score=%.4f (%s)",
-             len(result.added), len(result.removed), len(result.changed),
-             result.severity_score, result.severity_label)
+    log.info(
+        "diff complete: +%d added, -%d removed, ~%d changed, score=%.4f (%s)",
+        len(result.added),
+        len(result.removed),
+        len(result.changed),
+        result.severity_score,
+        result.severity_label,
+    )
     return result
 
 
 # ── Top ASNs ──────────────────────────────────────────────────────────────────
+
 
 def _top_changed_asns(result: DiffResult, top_n: int = 10) -> list[dict]:
     """
@@ -228,9 +238,9 @@ def _top_changed_asns(result: DiffResult, top_n: int = 10) -> list[dict]:
         List of dicts sorted by abs(net_ips), length = min(top_n, unique_asns).
     """
     gained_ips: Counter = Counter()
-    lost_ips:   Counter = Counter()
+    lost_ips: Counter = Counter()
     gained_pfx: Counter = Counter()
-    lost_pfx:   Counter = Counter()
+    lost_pfx: Counter = Counter()
 
     for e in result.added:
         v4, v6 = prefix_size(e["prefix"])
@@ -246,19 +256,19 @@ def _top_changed_asns(result: DiffResult, top_n: int = 10) -> list[dict]:
         v4, v6 = prefix_size(e["prefix"])
         gained_ips[e["new_asn"]] += v4 + v6
         gained_pfx[e["new_asn"]] += 1
-        lost_ips[e["old_asn"]]   += v4 + v6
-        lost_pfx[e["old_asn"]]   += 1
+        lost_ips[e["old_asn"]] += v4 + v6
+        lost_pfx[e["old_asn"]] += 1
 
     all_asns: set[str] = set(gained_ips) | set(lost_ips)
     rows: list[dict] = [
         {
-            "asn":        asn,
+            "asn": asn,
             "gained_pfx": gained_pfx[asn],
-            "lost_pfx":   lost_pfx[asn],
-            "net_pfx":    gained_pfx[asn] - lost_pfx[asn],
+            "lost_pfx": lost_pfx[asn],
+            "net_pfx": gained_pfx[asn] - lost_pfx[asn],
             "gained_ips": gained_ips[asn],
-            "lost_ips":   lost_ips[asn],
-            "net_ips":    gained_ips[asn] - lost_ips[asn],
+            "lost_ips": lost_ips[asn],
+            "net_ips": gained_ips[asn] - lost_ips[asn],
         }
         for asn in all_asns
     ]
@@ -267,6 +277,7 @@ def _top_changed_asns(result: DiffResult, top_n: int = 10) -> list[dict]:
 
 
 # ── Severity Score ────────────────────────────────────────────────────────────
+
 
 def _compute_severity(result: DiffResult) -> tuple[float, str]:
     """
@@ -293,23 +304,19 @@ def _compute_severity(result: DiffResult) -> tuple[float, str]:
       < 0.70 → High
       else   → Critical
     """
-    sig_coverage = min(
-        result.coverage_change_pct_v4 / SEVERITY_CAPS["coverage"], 1.0
-    )
-    sig_churn = min(
-        result.diff_percentage / SEVERITY_CAPS["churn"], 1.0
-    )
+    sig_coverage = min(result.coverage_change_pct_v4 / SEVERITY_CAPS["coverage"], 1.0)
+    sig_churn = min(result.diff_percentage / SEVERITY_CAPS["churn"], 1.0)
     if result.top_changed_asns and result.total_changes > 0:
-        top      = result.top_changed_asns[0]
-        top_pfx  = top["gained_pfx"] + top["lost_pfx"]
+        top = result.top_changed_asns[0]
+        top_pfx = top["gained_pfx"] + top["lost_pfx"]
         sig_conc = min(top_pfx / result.total_changes, 1.0)
     else:
         sig_conc = 0.0
 
     score = round(
-        sig_coverage * SEVERITY_WEIGHTS["coverage"]      +
-        sig_churn    * SEVERITY_WEIGHTS["churn"]          +
-        sig_conc     * SEVERITY_WEIGHTS["concentration"],
+        sig_coverage * SEVERITY_WEIGHTS["coverage"]
+        + sig_churn * SEVERITY_WEIGHTS["churn"]
+        + sig_conc * SEVERITY_WEIGHTS["concentration"],
         4,
     )
 
@@ -319,6 +326,12 @@ def _compute_severity(result: DiffResult) -> tuple[float, str]:
             label = lbl
             break
 
-    log.debug("severity signals: coverage=%.4f churn=%.4f conc=%.4f → score=%.4f (%s)",
-              sig_coverage, sig_churn, sig_conc, score, label)
+    log.debug(
+        "severity signals: coverage=%.4f churn=%.4f conc=%.4f → score=%.4f (%s)",
+        sig_coverage,
+        sig_churn,
+        sig_conc,
+        score,
+        label,
+    )
     return score, label
